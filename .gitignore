@@ -1,0 +1,85 @@
+###############################################
+# Java / Maven / Spring Boot
+###############################################
+
+# Maven target directory
+target/
+
+# Maven wrapper logs
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot Temp files
+spring.log
+*.log
+
+# Compilation files
+*.class
+*.jar
+*.war
+*.ear
+
+###############################################
+# SMSF Module Logs
+###############################################
+logs/
+smsf_server_debug.txt
+smsf_server_log.txt
+
+###############################################
+# IntelliJ IDEA / Eclipse / VSCode
+###############################################
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VSCode
+.vscode/
+
+###############################################
+# OS / Editor files
+###############################################
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# Windows
+Thumbs.db
+
+###############################################
+# Environment / Secrets (just in case)
+###############################################
+*.env
+*.properties.local
+*.yml.local
+
+###############################################
+# JetBrains
+###############################################
+out/
+
+###############################################
+# Temporary files
+###############################################
+*.tmp
+*.swp
+*.swo
+
+###############################################
+# Dependency directories
+###############################################
+/node_modules/
+
+
+# Release distributions produced by release/build.xml
+release/SMSF_*.zip

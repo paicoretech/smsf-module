@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<!--
+    Produces one on-prem release zip per deployable module:
+        SMSF_CORE-<version>.zip
+        SMSF_N21_REGISTRATION-<version>.zip
+        SMSF_SERVICE_MT-<version>.zip
+
+    Each zip carries bin/ (jar + start.sh), conf/ (application.properties + logback.xml) and an
+    empty logs/. The Docker images do not consume these zips — they copy the module jar directly —
+    so this target only covers the non-containerised installs.
+-->
+<project name="smsf.module.release" default="release" basedir=".">
+    <property environment="sys"/>
+    <property name="release.dir" location="${ant.file.smsf.module.release}/../target" />
+    <property name="base.dir" location="${ant.file.smsf.module.release}/.." />
+    <property name="project.dir" location="${base.dir}/.." />
+    <property name="smsf.module.release.version" value="1.0.0-SNAPSHOT" />
+
+    <!--
+        -DskipTests, not -Dmaven.test.skip=true. The latter also skips *compiling* the test sources,
+        which leaves maven-jar-plugin with nothing to put in smsf-common's test-jar. That test-jar
+        carries the shared fixtures the other three modules declare as a test-scoped dependency, and
+        Maven resolves test-scoped dependencies even when it is not going to run any test — so the
+        reactor would go looking for smsf-common-<version>-tests.jar in Artifactory and fail.
+
+        Tests are compiled here but not run: the CI build stage already executed the whole suite
+        before this stage is reached.
+    -->
+    <property name="release.build.goals" value="clean install -DskipTests" />
+
+    <condition property="mvn.executable" value="${sys.M2_HOME}\bin\mvn.bat" else="mvn">
+        <os family="windows"/>
+    </condition>
+
+    <target name="release" depends="clean,build,package" />
+
+    <target name="clean">
+        <echo>Delete ${release.dir}</echo>
+        <delete dir="${release.dir}"/>
+        <delete>
+            <fileset dir="${base.dir}">
+                <include name="SMSF_*-*.zip" />
+            </fileset>
+        </delete>
+    </target>
+
+    <target name="build">
+        <echo>building the SMSF modules in ${project.dir} with ${release.build.goals}</echo>
+        <exec failonerror="true" executable="${mvn.executable}" dir="${project.dir}">
+            <arg line="${release.build.goals}" />
+        </exec>
+    </target>
+
+    <!--
+        Assembles and zips one module.
+          @module   Maven artifactId / directory name (e.g. smsf-core)
+          @dist     Uppercase distribution name used for the zip and the install directory
+    -->
+    <macrodef name="package-module">
+        <attribute name="module"/>
+        <attribute name="dist"/>
+        <sequential>
+            <property name="stage.@{dist}" location="${release.dir}/@{dist}" />
+
+            <mkdir dir="${release.dir}/@{dist}/bin" />
+            <mkdir dir="${release.dir}/@{dist}/conf" />
+            <mkdir dir="${release.dir}/@{dist}/logs" />
+
+            <copy overwrite="true" todir="${release.dir}/@{dist}/bin">
+                <fileset dir="${project.dir}/@{module}/target">
+                    <include name="@{module}-*.jar"/>
+                    <exclude name="*.jar.original"/>
+                </fileset>
+                <mapper type="glob" from="@{module}-*.jar" to="@{module}.jar"/>
+            </copy>
+
+            <copy failonerror="true" todir="${release.dir}/@{dist}/conf">
+                <fileset file="${project.dir}/@{module}/src/main/resources/application.properties"/>
+            </copy>
+            <copy failonerror="true" todir="${release.dir}/@{dist}/conf">
+                <fileset file="${project.dir}/docker/common/conf/logback.xml"/>
+            </copy>
+
+            <copy failonerror="true" todir="${release.dir}/@{dist}/bin">
+                <fileset file="${base.dir}/start.sh"/>
+            </copy>
+            <replace file="${release.dir}/@{dist}/bin/start.sh" token="@APP_JAR@" value="@{module}.jar"/>
+            <replace file="${release.dir}/@{dist}/bin/start.sh" token="@APP_NAME@" value="@{module}"/>
+            <chmod file="${release.dir}/@{dist}/bin/start.sh" perm="+x"/>
+
+            <zip destfile="${base.dir}/@{dist}-${smsf.module.release.version}.zip" filesonly="false">
+                <zipfileset dir="${release.dir}/@{dist}" prefix="@{dist}-${smsf.module.release.version}" filemode="755">
+                    <include name="bin/start.sh" />
+                </zipfileset>
+                <zipfileset dir="${release.dir}/@{dist}" prefix="@{dist}-${smsf.module.release.version}">
+                    <include name="**" />
+                    <exclude name="bin/start.sh" />
+                </zipfileset>
+            </zip>
+        </sequential>
+    </macrodef>
+
+    <target name="package">
+        <package-module module="smsf-core" dist="SMSF_CORE"/>
+        <package-module module="smsf-n21-registration" dist="SMSF_N21_REGISTRATION"/>
+        <package-module module="smsf-service-mt" dist="SMSF_SERVICE_MT"/>
+    </target>
+
+</project>

@@ -1,0 +1,85 @@
+# smsf-n21-registration — consumes the registration events and forwards them to the UDM over N21.
+#
+# Depends on smsf-core only through Redis and Kafka: it reads the UDM-audience token that the core
+# publishes, and consumes <networkId>.smsf.udm.register. It starts fine on its own and retries until
+# the token appears, so the two can be restarted in any order.
+#
+# Registry image on a real deployment:
+#   paicbusinessdev/enterprise-smsf-n21-registration:<version>   (main)
+#   paicbusinessdev/technical-smsf-n21-registration:<version>    (technical)
+#   paicbusinessdev/qa-smsf-n21-registration:<version>           (any other branch)
+
+services:
+  smsf-n21-registration:
+    image: paic/smsf-n21-registration:latest
+    ulimits:
+      nofile:
+        soft: 1000000
+        hard: 1000000
+
+    environment:
+      # APP
+      SPRING_APPLICATION_NAME: "smsf-n21-registration"
+      # JVM
+      JVM_XMS: "-Xms256m"
+      JVM_XMX: "-Xmx512m"
+      # REDIS (gateway registry and the UDM token published by smsf-core)
+      REDIS_CLUSTER_NODES: "localhost:7000,localhost:7001,localhost:7002,localhost:7003,localhost:7004,localhost:7005"
+      REDIS_THREADPOOL_MAXTOTAL: "20"
+      REDIS_THREADPOOL_MAXIDLE: "20"
+      REDIS_THREADPOOL_MINIDLE: "1"
+      REDIS_THREADPOOL_BLOCKWHENEXHAUSTED: "true"
+      REDIS_CONNECTION_TIMEOUT: "2000"
+      REDIS_SO_TIMEOUT: "2000"
+      REDIS_MAX_ATTEMPTS: "20"
+      REDIS_CONNECTION_USER: ""
+      REDIS_CONNECTION_PASSWORD: ""
+      # "true" for a single Redis instance: only the first entry of
+      # REDIS_CLUSTER_NODES is used, as its host:port. Must match across the three modules.
+      REDIS_STANDALONE_ENABLED: "false"
+      # KAFKA CONFIG (consumer of <networkId>.smsf.udm.register)
+      KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+      KAFKA_LISTENER_CONCURRENCY: "1"
+      KAFKA_CONSUMER_REGISTER_MAX_POLL_RECORDS: "100"
+      # WEBSOCKET
+      WEBSOCKET_SERVER_ENABLED: "true"
+      WEBSOCKET_SERVER_HOST: "localhost"
+      WEBSOCKET_SERVER_PORT: "9087"
+      WEBSOCKET_SERVER_PATH: "/ws"
+      WEBSOCKET_RETRY_INTERVAL_SECONDS: "10"
+      WEBSOCKET_HEADER_NAME: "Authorization"
+      WEBSOCKET_HEADER_VALUE: "fcb13146-ecd7-46a5-b9cb-a1e75fae9bdc"
+      # SMSF LOGGING
+      # Root log level; everything goes to stdout, collected with `docker logs`.
+      SMSF_TRACE_LEVEL: "INFO"
+      # SECURITY
+      # The token is minted by smsf-core and read from Redis; this module never calls the NRF for
+      # one. Keep the margin equal to the core's, or it will discard tokens the core still considers
+      # valid (too high) or use tokens that die in flight (too low).
+      SMSF_SECURITY_OUTBOUND_TOKEN_REFRESH_MARGIN_SECONDS: "30"
+      # A gateway with OAuth2 towards the UDM does not start its registration consumer until the
+      # token is in Redis; this is how often that is re-checked, and so the recovery latency.
+      SMSF_SECURITY_OUTBOUND_TOKEN_REDIS_CHECK_INTERVAL_SECONDS: "10"
+      # Re-read interval while the rotation is due but has not landed yet.
+      SMSF_SECURITY_OUTBOUND_TOKEN_STALE_POLL_INTERVAL_MS: "100"
+      # N21 TOWARDS THE UDM (Nudm_UECM, TS 29.503)
+      # UDM discovery still runs from this module against the NRF: Redis carries the token, not the
+      # discovery result.
+      SMSF_N21_DISCOVERY_CACHE_TTL_SECONDS: "300"
+      SMSF_N21_DISCOVERY_SUBSCRIBER_AWARE: "true"
+      SMSF_N21_DISCOVERY_MAX_ENDPOINTS: "4"
+      SMSF_N21_RESTART_MIN_INTERVAL_SECONDS: "30"
+      # Home PLMN reported when the AMF sends no GUAMI. Leave empty to drop the registration
+      # instead of sending an invented PLMN.
+      SMSF_N21_HOME_PLMN_MCC: ""
+      SMSF_N21_HOME_PLMN_MNC: ""
+      # JMX CONFIG
+      ENABLE_JMX: "true"
+      IP_JMX: "127.0.0.1"
+      JMX_PORT: "9072"
+
+    volumes:
+      - /opt/paic/smsc-docker/smsf/conf/logback.xml:/opt/paic/SMSF_N21_REGISTRATION/conf/logback.xml
+      # mTLS material towards the UDM and the NRF, referenced by the Http2Gateway entries in Redis.
+      - /opt/paic/smsc-docker/smsf/certs:/opt/paic/certs:ro
+    network_mode: host

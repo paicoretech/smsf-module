@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.12</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.paicbd.smsc</groupId>
+    <artifactId>smsf-module</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>smsf-module</name>
+    <description>SMSF modules for 5G HTTP/2 SBI (Nsmsf_SMService), with TPDU/SS7 interworking</description>
+
+    <modules>
+        <module>smsf-common</module>
+        <module>smsf-core</module>
+        <module>smsf-n21-registration</module>
+        <module>smsf-service-mt</module>
+    </modules>
+
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License</name>
+            <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Roberto Calero</name>
+            <email>roberto.calero@paicbd.com</email>
+            <organization>PAiCore Technology</organization>
+            <organizationUrl>https://paicore.tech</organizationUrl>
+            <roles>
+                <role>Active Developer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <name>Enmanuel Calero</name>
+            <email>enmanuel.calero@paicbd.com</email>
+            <organization>PAiCore Technology</organization>
+            <organizationUrl>https://paicore.tech</organizationUrl>
+            <roles>
+                <role>Active Developer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <name>Melvin Mendoza</name>
+            <email>melvin.mendoza@paicbd.com</email>
+            <organization>PAiCore Technology</organization>
+            <organizationUrl>https://paicore.tech</organizationUrl>
+            <roles>
+                <role>Active Developer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <name>Jose Aguirre</name>
+            <email>jose.aguirre@paicbd.com</email>
+            <organization>PAiCore Technology</organization>
+            <organizationUrl>https://paicore.tech</organizationUrl>
+            <roles>
+                <role>Active Developer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+    </developers>
+
+    <properties>
+        <java.version>21</java.version>
+        <smsc-utils.version>3.1.0-SNAPSHOT</smsc-utils.version>
+        <ss7.version>8.3.0-275</ss7.version>
+        <redis.clients.version>5.0.2</redis.clients.version>
+        <apache.cassandra.version>4.19.0</apache.cassandra.version>
+        <spring.kafka.version>3.3.7</spring.kafka.version>
+        <jackson.version>2.18.1</jackson.version>
+        <caffeine.version>3.2.3</caffeine.version>
+        <nimbus.jose.jwt.version>9.40</nimbus.jose.jwt.version>
+        <wiremock.version>3.9.1</wiremock.version>
+        <testcontainers.version>1.20.1</testcontainers.version>
+        <sba-stack.version>1.0.0-SNAPSHOT</sba-stack.version>
+        <tyrus.version>2.1.5</tyrus.version>
+        <mockito.version>5.12.0</mockito.version>
+        <mockito-inline.version>5.2.0</mockito-inline.version>
+        <bean.matchers.version>0.14</bean.matchers.version>
+        <codehaus.version>2.17.1</codehaus.version>
+        <surfire.plugin.version>3.3.1</surfire.plugin.version>
+        <sonar.scanner.version>4.0.0.4121</sonar.scanner.version>
+        <jacoco.version>0.8.12</jacoco.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.paicbd.smsc</groupId>
+                <artifactId>smsf-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.paicbd</groupId>
+                <artifactId>smsc-utils</artifactId>
+                <version>${smsc-utils.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-webflux</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-web</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-tomcat</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.paicore.sba.stack</groupId>
+                <artifactId>sba-stack-core</artifactId>
+                <version>${sba-stack.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.paicore.sba.stack</groupId>
+                <artifactId>sba-stack-codec</artifactId>
+                <version>${sba-stack.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.paicore.sba.stack</groupId>
+                <artifactId>sba-stack-http2</artifactId>
+                <version>${sba-stack.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.paicore.sba.stack</groupId>
+                <artifactId>sba-stack-security</artifactId>
+                <version>${sba-stack.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.paicore.sba.stack</groupId>
+                <artifactId>sba-stack-testing</artifactId>
+                <version>${sba-stack.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.map</groupId>
+                <artifactId>map-api</artifactId>
+                <version>${ss7.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.map</groupId>
+                <artifactId>map-impl</artifactId>
+                <version>${ss7.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>redis.clients</groupId>
+                <artifactId>jedis</artifactId>
+                <version>${redis.clients.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+                <version>${spring.kafka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.cassandra</groupId>
+                <artifactId>java-driver-core</artifactId>
+                <version>${apache.cassandra.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cassandra</groupId>
+                <artifactId>java-driver-query-builder</artifactId>
+                <version>${apache.cassandra.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus.jose.jwt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.tyrus.bundles</groupId>
+                <artifactId>tyrus-standalone-client</artifactId>
+                <version>${tyrus.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-inline</artifactId>
+                <version>${mockito-inline.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.bean-matchers</groupId>
+                <artifactId>bean-matchers</artifactId>
+                <version>${bean.matchers.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.wiremock</groupId>
+                <artifactId>wiremock-standalone</artifactId>
+                <version>${wiremock.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Real Kafka, Redis and ScyllaDB for the end-to-end tests. -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.bean-matchers</groupId>
+            <artifactId>bean-matchers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${codehaus.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>set</goal>
+                            <goal>commit</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surfire.plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${sonar.scanner.version}</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

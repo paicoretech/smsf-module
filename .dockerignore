@@ -1,0 +1,36 @@
+# The build context is the repository root because the Dockerfiles copy each module's jar and its
+# application.properties. Everything that is not needed for that is excluded to keep the context small.
+.git
+.gitattributes
+.gitignore
+.idea
+.claude
+.mvn
+mvnw
+mvnw.cmd
+HELP.md
+README.md
+*.md
+Jenkinsfile
+release/target
+release/*.zip
+
+# Build output: only the repackaged module jars are needed.
+target
+**/target/classes
+**/target/test-classes
+**/target/generated-sources
+**/target/generated-test-sources
+**/target/maven-status
+**/target/maven-archiver
+**/target/surefire-reports
+**/target/site
+**/target/*.jar.original
+
+# Test artefacts. No Dockerfile COPYs these — the images take only each module's repackaged jar,
+# and Spring Boot's repackage leaves test-scoped dependencies out of BOOT-INF/lib. They are listed
+# so they cannot reach the context either: the release build compiles test sources (-DskipTests,
+# not -Dmaven.test.skip, so smsf-common's test-jar gets built), which leaves these behind.
+**/target/*-tests.jar
+**/target/*.exec
+**/target/jacoco*

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.paicbd.smsc</groupId>
+        <artifactId>smsf-module</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>smsf-common</artifactId>
+    <name>smsf-common</name>
+    <description>
+        Code shared by the SMSF modules: TPDU encoding/decoding used by both the MO flow in
+        smsf-core and the MT flow in smsf-service-mt, the NRF client connection used by smsf-core
+        and smsf-n21-registration, and the Redis contract for the NRF-derived token.
+        This is an internal library, not a deployable application.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.paicbd</groupId>
+            <artifactId>smsc-utils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.paicore.sba.stack</groupId>
+            <artifactId>sba-stack-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.paicore.sba.stack</groupId>
+            <artifactId>sba-stack-codec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.paicore.sba.stack</groupId>
+            <artifactId>sba-stack-http2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.restcomm.protocols.ss7.map</groupId>
+            <artifactId>map-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.restcomm.protocols.ss7.map</groupId>
+            <artifactId>map-impl</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+        </dependency>
+
+        <!--
+            Exposed through the test-jar so the three modules share one container definition
+            instead of each booting its own Kafka, Redis and ScyllaDB.
+        -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>kafka</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Http2GatewayCreator and the other test fixtures are shared by the three modules. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

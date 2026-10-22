@@ -1,0 +1,129 @@
+# smsf-core — SBI/API layer, ScyllaDB persistence, NRF integration.
+#
+# This is the only module that talks to the NRF and the only writer of the access tokens in Redis.
+# It can run on its own: smsf-n21-registration and smsf-service-mt are not needed for the SBI to
+# answer the AMF, they only pick up the work it publishes.
+#
+# Registry image on a real deployment:
+#   paicbusinessdev/enterprise-smsf-core:<version>   (main)
+#   paicbusinessdev/technical-smsf-core:<version>    (technical)
+#   paicbusinessdev/qa-smsf-core:<version>           (any other branch)
+
+services:
+  smsf-core:
+    image: paic/smsf-core:latest
+    ulimits:
+      nofile:
+        soft: 1000000
+        hard: 1000000
+
+    environment:
+      # APP
+      SPRING_APPLICATION_NAME: "smsf-core"
+      SPRING_MAIN_WEB_APPLICATION_TYPE: "reactive"
+      # JVM
+      JVM_XMS: "-Xms512m"
+      JVM_XMX: "-Xmx1024m"
+      # SERVER
+      SERVER_PORT: "9070"
+      SERVER_HTTP2_ENABLED: "true"
+      # SBI SERVER (Nsmsf_SMService producer)
+      SMSF_SBI_SERVER_BASE_PATH: "/nsmsf-sms/v2"
+      SMSF_SBI_SERVER_APIROOT: "https://api.operator.com"
+      SMSF_SBI_PUBLIC_ADDRESS: "127.0.0.1"
+      SMSF_SBI_HTTP2_MAX_CONCURRENT_STREAMS: "256"
+      # Kafka producer throughput knobs. Defaults reproduce the client defaults, so changing them
+      # is an explicit decision. Lowering durability (acks) requires disabling idempotence first.
+      # Verified-JWT cache. The signature is verified once per token instead of once per request;
+      # expiry is still checked on every request. 0 disables it.
+      SMSF_SECURITY_JWT_VERIFICATION_CACHE_TTL_SECONDS: "30"
+      SMSF_SECURITY_JWT_VERIFICATION_CACHE_MAX_SIZE: "1000"
+      SMSF_KAFKA_PRODUCER_LINGER_MS: "0"
+      SMSF_KAFKA_PRODUCER_BATCH_SIZE: "16384"
+      SMSF_KAFKA_PRODUCER_COMPRESSION_TYPE: "none"
+      SMSF_KAFKA_PRODUCER_ENABLE_IDEMPOTENCE: "true"
+      SMSF_KAFKA_PRODUCER_ACKS: "all"
+      # REDIS
+      REDIS_CLUSTER_NODES: "localhost:7000,localhost:7001,localhost:7002,localhost:7003,localhost:7004,localhost:7005"
+      REDIS_THREADPOOL_MAXTOTAL: "20"
+      REDIS_THREADPOOL_MAXIDLE: "20"
+      REDIS_THREADPOOL_MINIDLE: "1"
+      REDIS_THREADPOOL_BLOCKWHENEXHAUSTED: "true"
+      REDIS_CONNECTION_TIMEOUT: "2000"
+      REDIS_SO_TIMEOUT: "2000"
+      REDIS_MAX_ATTEMPTS: "20"
+      REDIS_CONNECTION_USER: ""
+      REDIS_CONNECTION_PASSWORD: ""
+      # "true" for a single Redis instance: only the first entry of
+      # REDIS_CLUSTER_NODES is used, as its host:port. Must match across the three modules.
+      REDIS_STANDALONE_ENABLED: "false"
+      # KAFKA CONFIG (producer only: MO, delivery reports and registration events)
+      KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+      # SCYLLA CONFIG (UE SMS context and MO multipart reassembly)
+      SCYLLA_CONTACT_POINTS: "localhost:9042"
+      SCYLLA_DATACENTER: "datacenter1"
+      SCYLLA_USER: ""
+      SCYLLA_PASSWORD: ""
+      # WEBSOCKET
+      WEBSOCKET_SERVER_ENABLED: "true"
+      WEBSOCKET_SERVER_HOST: "localhost"
+      WEBSOCKET_SERVER_PORT: "9087"
+      WEBSOCKET_SERVER_PATH: "/ws"
+      WEBSOCKET_RETRY_INTERVAL_SECONDS: "10"
+      WEBSOCKET_HEADER_NAME: "Authorization"
+      WEBSOCKET_HEADER_VALUE: "fcb13146-ecd7-46a5-b9cb-a1e75fae9bdc"
+      # SMSF LOGGING
+      # Root log level; everything goes to stdout, collected with `docker logs`.
+      SMSF_TRACE_LEVEL: "INFO"
+      # SECURITY (HTTP/2 SBI)
+      SMSF_SECURITY_ENABLED: "true"
+      SMSF_SECURITY_BYPASS_PATHS: "/actuator/**,/health,/info"
+      SMSF_SECURITY_EXPECTED_SCOPE: "nsmsf-sms"
+      SMSF_SECURITY_ALLOWED_JWS_ALGORITHMS: "RS256,ES256"
+      SMSF_SECURITY_CLOCK_SKEW_SECONDS: "30"
+      SMSF_SECURITY_LOG_SUCCESS: "false"
+      SMSF_SECURITY_JWKS_CACHE_TTL_SECONDS: "600"
+      SMSF_SECURITY_JWKS_CACHE_MAX_SIZE: "100"
+      SMSF_SECURITY_JWKS_FETCH_TIMEOUT_MS: "5000"
+      SMSF_SECURITY_JWKS_FETCH_RETRY_MAX: "2"
+      SMSF_SECURITY_BEARER_HEADER_NAME: "Authorization"
+      SMSF_SECURITY_BEARER_SCHEME: "Bearer"
+      # TLS / mTLS (this is the only module that exposes a listener)
+      SMSF_TLS_ENABLED: "true"
+      SMSF_TLS_SERVER_KEY_PASSWORD: ""
+      SMSF_TLS_PROTOCOLS: "TLSv1.3,TLSv1.2"
+      # Session resumption. Size the cache to the peer connections expected within the timeout
+      # window: a peer that reconnects resumes instead of paying a full handshake.
+      SMSF_TLS_SESSION_CACHE_SIZE: "1024"
+      SMSF_TLS_SESSION_TIMEOUT_SECONDS: "300"
+      SMSF_TLS_HANDSHAKE_TIMEOUT_MS: "10000"
+      # OUTBOUND OAUTH2 TOKEN REFRESH
+      # Both audiences (AMF and UDM) are minted here and published to Redis. The refresh margin
+      # must match the one configured in smsf-n21-registration and smsf-service-mt.
+      SMSF_SECURITY_OUTBOUND_TOKEN_REFRESH_MARGIN_SECONDS: "30"
+      SMSF_SECURITY_OUTBOUND_TOKEN_INITIAL_FETCH_TIMEOUT_SECONDS: "10"
+      SMSF_SECURITY_OUTBOUND_TOKEN_RETRY_BACKOFF_SECONDS: "5"
+      # NRF REGISTRATION (Nnrf_NFManagement, TS 29.510)
+      SMSF_NRF_API_FULL_VERSION: "2.0.0"
+      SMSF_NRF_HEARTBEAT_DEFAULT_SECONDS: "60"
+      SMSF_NRF_INITIAL_REGISTER_TIMEOUT_SECONDS: "10"
+      SMSF_NRF_RETRY_BACKOFF_SECONDS: "5"
+      # N21 ACCESS-TOKEN AUDIENCE
+      # The forwarding itself lives in smsf-n21-registration; this is only the scope used to mint
+      # the UDM-audience token that is published to Redis.
+      SMSF_N21_OAUTH2_SCOPE: "nudm-uecm"
+      # MULTIPART MO REASSEMBLY
+      MESSAGE_PARTS_TTL: "30"
+      MESSAGE_PARTS_CACHE_TTL_GRACE_SECONDS: "5"
+      MESSAGE_PARTS_CACHE_MAX_SIZE: "50000"
+      # JMX CONFIG
+      ENABLE_JMX: "true"
+      IP_JMX: "127.0.0.1"
+      JMX_PORT: "9071"
+
+    volumes:
+      - /opt/paic/smsc-docker/smsf/conf/logback.xml:/opt/paic/SMSF_CORE/conf/logback.xml
+      # Certificates referenced by the Http2Gateway entries in Redis (server identity, NRF client,
+      # trust chains). The paths inside the container must match what is stored in Redis.
+      - /opt/paic/smsc-docker/smsf/certs:/opt/paic/certs:ro
+    network_mode: host

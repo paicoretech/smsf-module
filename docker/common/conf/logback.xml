@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Container logging for the three SMSF modules: everything to stdout, so `docker logs` and the
+    platform's log collector see it.
+
+    The previous image shipped an empty <configuration/> with a comment claiming Spring Boot would
+    fall back to its defaults. It does not: when logback is handed a configuration with no
+    appenders, the application starts and logs nothing at all — including startup failures. This
+    file replaces that with a real console appender.
+
+    LOG_LEVEL sets the root level and is exported by bin/start.sh from SMSF_TRACE_LEVEL
+    (INFO when unset). Mount over this file to change the format or add file appenders.
+-->
+<configuration>
+
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd'T'HH:mm:ss.SSS'Z', UTC} %-5level [%thread] %logger{40} - %msg%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Chatty at startup and on every reconnection; INFO is enough even when debugging the SMSF. -->
+    <logger name="org.apache.kafka" level="WARN"/>
+    <logger name="com.datastax.oss.driver" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+    <!--
+        Logs one WARN with a full stack trace for every connection a peer abandons mid-handshake.
+        Under connection churn that is thousands of stack traces a second, burning more CPU on the
+        event loops than the handshakes themselves and drowning the log. The condition is a client
+        problem and is visible from the connection counters, not from each individual trace.
+    -->
+    <logger name="io.netty.handler.ssl.ApplicationProtocolNegotiationHandler" level="ERROR"/>
+
+    <root level="${LOG_LEVEL:-INFO}">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>
